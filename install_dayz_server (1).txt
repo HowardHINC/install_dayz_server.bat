@@ -1,0 +1,153 @@
+@echo off
+setlocal EnableDelayedExpansion
+
+:: DayZ Server Installer
+echo DayZ Server Installation Script
+echo ===============================
+echo This script will install a DayZ server in C:\DayZServer.
+echo Ensure you have ~20 GB free disk space and an internet connection.
+echo.
+
+:: Prompt user to continue
+set /p confirm=Do you want to proceed? (y/n): 
+if /i not "!confirm!"=="y" (
+    echo Installation aborted.
+    pause
+    exit /b
+)
+
+:: Prompt for Steam credentials
+echo Please enter your Steam username (required to download DayZ Server).
+set /p STEAM_USERNAME=Steam Username: 
+if "!STEAM_USERNAME!"=="" (
+    echo ERROR: Steam username is required.
+    pause
+    exit /b 1
+)
+set /p STEAM_PASSWORD=Steam Password (leave blank if Steam Guard is disabled): 
+
+:: Set installation paths
+set "INSTALL_DIR=C:\DayZServer"
+set "STEAMCMD_DIR=%INSTALL_DIR%\steamcmd"
+set "SERVER_DIR=%INSTALL_DIR%\DayZServer"
+set "STEAMCMD_URL=https://steamcdn-a.akamaihd.net/client/installer/steamcmd.zip"
+set "STEAMCMD_ZIP=%INSTALL_DIR%\steamcmd.zip"
+
+:: Create installation directory
+echo Creating installation directory: %INSTALL_DIR%
+if not exist "%INSTALL_DIR%" (
+    mkdir "%INSTALL_DIR%"
+    if !errorlevel! neq 0 (
+        echo ERROR: Failed to create directory %INSTALL_DIR%.
+        pause
+        exit /b 1
+    )
+)
+
+:: Download SteamCMD
+echo Downloading SteamCMD...
+powershell -Command "Invoke-WebRequest -Uri '%STEAMCMD_URL%' -OutFile '%STEAMCMD_ZIP%'"
+if not exist "%STEAMCMD_ZIP%" (
+    echo ERROR: Failed to download SteamCMD.
+    pause
+    exit /b 1
+)
+
+:: Extract SteamCMD
+echo Extracting SteamCMD...
+powershell -Command "Expand-Archive -Path '%STEAMCMD_ZIP%' -DestinationPath '%STEAMCMD_DIR%' -Force"
+if not exist "%STEAMCMD_DIR%\steamcmd.exe" (
+    echo ERROR: Failed to extract SteamCMD.
+    pause
+    exit /b 1
+)
+del "%STEAMCMD_ZIP%"
+
+:: Install DayZ Server
+echo Installing DayZ Server via SteamCMD...
+:: Run SteamCMD with user credentials
+if "!STEAM_PASSWORD!"=="" (
+    set "STEAMCMD_COMMAND=+login %STEAM_USERNAME% +app_update 223350 validate +quit"
+) else (
+    set "STEAMCMD_COMMAND=+login %STEAM_USERNAME% %STEAM_PASSWORD% +app_update 223350 validate +quit"
+)
+echo Running SteamCMD: %STEAMCMD_DIR%\steamcmd.exe !STEAMCMD_COMMAND!
+"%STEAMCMD_DIR%\steamcmd.exe" !STEAMCMD_COMMAND!
+if !errorlevel! neq 0 (
+    echo ERROR: Failed to install DayZ Server. Check Steam credentials or Steam Guard settings.
+    echo If Steam Guard is enabled, you may need to enter a Steam Guard code manually.
+    echo Try running SteamCMD manually: %STEAMCMD_DIR%\steamcmd.exe +login %STEAM_USERNAME% +app_update 223350 validate +quit
+    pause
+    exit /b 1
+)
+
+:: Verify server installation
+if not exist "%SERVER_DIR%\DayZServer_x64.exe" (
+    echo ERROR: DayZ Server not found in %SERVER_DIR%.
+    pause
+    exit /b 1
+)
+
+:: Create basic serverDZ.cfg
+echo Creating server configuration (serverDZ.cfg)...
+(
+echo hostname = "My DayZ Server";
+echo password = "";
+echo passwordAdmin = "changeme";
+echo maxPlayers = 60;
+echo motd[] = {"Welcome to my DayZ server!", "Have fun and play fair!"};
+echo motdInterval = 300;
+echo timeStampFormat = "Short";
+echo logFile = "server.log";
+echo RCONport=2303;
+echo RCONpassword="your_rcon_password";
+echo steamQueryPort = 27016;
+echo verifySignatures = 2;
+echo equalModRequired = 0;
+echo disable3rdPerson=0;
+echo disableCrosshair=0;
+echo serverTime="SystemTime";
+echo serverTimeAcceleration=1;
+echo serverNightTimeAcceleration=1;
+echo serverTimePersistent=0;
+echo disableVoN=0;
+echo vonCodecQuality=7;
+echo guaranteedUpdates=1;
+echo instanceId = 1;
+echo respawnTime = 5;
+echo lootRespawnTime = 300;
+echo lootCleanupTime = 600;
+echo class Missions
+echo {
+echo     class DayZ
+echo     {
+echo         template = "dayzOffline.chernarusplus";
+echo     };
+echo };
+) > "%SERVER_DIR%\serverDZ.cfg"
+
+:: Create startup batch file
+echo Creating startup script (start_dayz_server.bat)...
+(
+echo @echo off
+echo echo Starting DayZ Server...
+echo "%SERVER_DIR%\DayZServer_x64.exe" -config=serverDZ.cfg -port=2302 -profiles=profiles -servermod=@YourServerMods -mod=@YourClientMods
+echo pause
+) > "%SERVER_DIR%\start_dayz_server.bat"
+
+:: Display completion message
+echo.
+echo ===============================
+echo DayZ Server installed successfully!
+echo Installation directory: %SERVER_DIR%
+echo.
+echo Next steps:
+echo 1. Edit %SERVER_DIR%\serverDZ.cfg to customize settings (e.g., server name, RCON password).
+echo 2. Update %SERVER_DIR%\start_dayz_server.bat to include mods if needed.
+echo 3. Run %SERVER_DIR%\start_dayz_server.bat to start the server.
+echo 4. Ensure ports 2302 (game), 2303 (RCON), and 27016 (Steam query) are open in your firewall/router.
+echo 5. For mods, use SteamCMD to download via: %STEAMCMD_DIR%\steamcmd.exe +login %STEAM_USERNAME% +workshop_download_item 221100 MOD_ID +quit
+echo.
+echo For support, check the DayZ server documentation or community forums.
+pause
+exit /b 0
