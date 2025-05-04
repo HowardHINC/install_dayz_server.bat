@@ -5,7 +5,7 @@ setlocal EnableDelayedExpansion
 echo DayZ Server Installation Script
 echo ===============================
 echo This script will install a DayZ server in C:\DayZServer.
-echo Ensure you have ~20 GB free disk space and an internet connection.
+Ensure you have ~20 GB of free disk space and an internet connection.
 echo.
 
 :: Prompt user to continue
@@ -17,7 +17,7 @@ if /i not "!confirm!"=="y" (
 )
 
 :: Prompt for Steam credentials
-echo Please enter your Steam username (required to download DayZ Server).
+Please enter your Steam username (required to download DayZ Server).
 set /p STEAM_USERNAME=Steam Username: 
 if "!STEAM_USERNAME!"=="" (
     echo ERROR: Steam username is required.
@@ -26,7 +26,7 @@ if "!STEAM_USERNAME!"=="" (
 )
 set /p STEAM_PASSWORD=Steam Password (leave blank if Steam Guard is disabled): 
 
-:: Set installation paths
+Set installation paths
 set "INSTALL_DIR=C:\DayZServer"
 set "STEAMCMD_DIR=%INSTALL_DIR%\steamcmd"
 set "SERVER_DIR=%INSTALL_DIR%\DayZServer"
@@ -37,7 +37,7 @@ set "STEAMCMD_ZIP=%INSTALL_DIR%\steamcmd.zip"
 echo Creating installation directory: %INSTALL_DIR%
 if not exist "%INSTALL_DIR%" (
     mkdir "%INSTALL_DIR%"
-    if !errorlevel! neq 0 (
+    if ! errorlevel! neq 0 (
         echo ERROR: Failed to create directory %INSTALL_DIR%.
         pause
         exit /b 1
